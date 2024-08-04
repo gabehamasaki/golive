@@ -15,7 +15,7 @@ type Server struct {
 
 type Message struct {
 	Sender   string                  `json:"sender,omitempty"`
-	RoomID   string                  `json:"roomID,omitempty"`
+	Channel  string                  `json:"roomID,omitempty"`
 	Payload  *map[string]interface{} `json:"payload,omitempty"`
 	ServerIP string                  `json:"server_ip,omitempty"`
 	SenderIP string                  `json:"sender_ip,omitempty"`
@@ -36,12 +36,12 @@ func (server *Server) Start() {
 		case conn := <-server.Register:
 			// Register new client
 			server.Clients[conn] = true
-			fmt.Printf("Client %s connected in channel %s\n", conn.Id, conn.RoomID)
+			fmt.Printf("Client %s connected in channel %s\n", conn.Id, conn.Channel)
 
 			// Parse message JSON to byte
 			jsonMessage, _ := json.Marshal(&Message{
-				Sender: "Server",
-				RoomID: conn.RoomID,
+				Sender:  "Server",
+				Channel: conn.Channel,
 				Payload: &map[string]interface{}{
 					"message":   fmt.Sprintf("Client %s connected", conn.Id),
 					"client_id": conn.Id,
@@ -61,7 +61,7 @@ func (server *Server) Start() {
 
 				jsonMessage, _ := json.Marshal(&Message{
 					Sender:   "Server",
-					RoomID:   conn.RoomID,
+					Channel:  conn.Channel,
 					Payload:  &map[string]interface{}{"message": fmt.Sprintf("Client %s disconnected", conn.Id)},
 					ServerIP: LocalIp(),
 					SenderIP: conn.Conn.LocalAddr().String(),
@@ -74,7 +74,7 @@ func (server *Server) Start() {
 			unparsedMessage := &Message{}
 			_ = json.Unmarshal(message, unparsedMessage)
 			for conn := range server.Clients {
-				if conn.RoomID == unparsedMessage.RoomID {
+				if conn.Channel == unparsedMessage.Channel {
 					conn.Send <- message
 				}
 			}

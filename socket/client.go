@@ -10,20 +10,20 @@ import (
 )
 
 type Client struct {
-	Id     string
-	Conn   *websocket.Conn
-	RoomID string
-	Send   chan []byte
-	Server *Server
+	Id      string
+	Conn    *websocket.Conn
+	Channel string
+	Send    chan []byte
+	Server  *Server
 }
 
-func (server *Server) NewClient(conn *websocket.Conn, roomID string) *Client {
+func (server *Server) NewClient(conn *websocket.Conn, channel string) *Client {
 	client := &Client{
-		Id:     uuid.Must(uuid.New(), nil).String(),
-		Conn:   conn,
-		RoomID: roomID,
-		Send:   make(chan []byte),
-		Server: server,
+		Id:      uuid.Must(uuid.New(), nil).String(),
+		Conn:    conn,
+		Channel: channel,
+		Send:    make(chan []byte),
+		Server:  server,
 	}
 
 	server.Register <- client
@@ -47,7 +47,7 @@ func (c *Client) Write() {
 			"payload":  message.Payload,
 		})
 
-		fmt.Printf("Sent message to %s in channel %s\n", c.Id, c.RoomID)
+		fmt.Printf("Sent message to %s in channel %s\n", c.Id, c.Channel)
 	}
 }
 
@@ -70,14 +70,13 @@ func (c *Client) Read() {
 
 		jsonMessage, _ := json.Marshal(&Message{
 			Sender:   c.Id,
-			RoomID:   c.RoomID,
+			Channel:  c.Channel,
 			Payload:  &jsonMap,
 			ServerIP: LocalIp(),
 			SenderIP: c.Conn.LocalAddr().String(),
 		})
 
-		fmt.Printf("Received message from %s in channel %s\n", c.Id, c.RoomID)
-
+		fmt.Printf("Received message from %s in channel %s\n", c.Id, c.Channel)
 		c.Server.Broadcast <- jsonMessage
 	}
 }
